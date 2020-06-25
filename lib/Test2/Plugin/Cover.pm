@@ -4,6 +4,7 @@ use warnings;
 
 use Test2::API qw/test2_add_callback_exit context/;
 use Path::Tiny qw/path/;
+use Carp qw/croak/;
 
 our $VERSION = '0.000001';
 
@@ -12,9 +13,15 @@ our %FILES;
 use XSLoader;
 XSLoader::load(__PACKAGE__, $VERSION);
 
+my $IMPORTED = 0;
 sub import {
     my $class = shift;
     my @params = @_;
+
+    if ($IMPORTED++) {
+        croak "$class has already been imported, too late to add params" if @params;
+        return;
+    }
 
     my $root = path('.')->realpath;
     test2_add_callback_exit(sub { $class->report(@params, ctx => $_[0], root => $root) });

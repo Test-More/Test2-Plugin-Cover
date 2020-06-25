@@ -17,6 +17,7 @@ my %WriteMakefileArgs = (
   "MIN_PERL_VERSION" => "5.012000",
   "NAME" => "Test2::Plugin::Cover",
   "PREREQ_PM" => {
+    "Carp" => 0,
     "Path::Tiny" => "0.048",
     "Test2::API" => "1.302166",
     "Test2::EventFacet" => "1.302166"
@@ -32,6 +33,7 @@ my %WriteMakefileArgs = (
 
 
 my %FallbackPrereqs = (
+  "Carp" => 0,
   "Path::Tiny" => "0.048",
   "Test2::API" => "1.302166",
   "Test2::EventFacet" => "1.302166",
