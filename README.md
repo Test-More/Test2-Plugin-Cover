@@ -10,7 +10,7 @@ minimal performance impact.
 Every time a subroutine is called this tool will do its best to find the
 filename the subroutine was defined in, and add it to a list. This list will be
 attached to a test2 event just before the test exits. In most formaters the
-event will only shwo up as a comment on STDOUT
+event will only show up as a comment on STDOUT
 ` # This test covered N source files. `. However tools such as
 [Test2::Harness::UI](https://metacpan.org/pod/Test2%3A%3AHarness%3A%3AUI) can make full use of the coverage information contained
 in the event.
@@ -230,7 +230,7 @@ The source code repository for Test2-Plugin-Cover can be found at
 
 # COPYRIGHT
 
-Copyright 2029 Chad Granum <exodist@cpan.org>.
+Copyright 2020 Chad Granum <exodist@cpan.org>.
 
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
