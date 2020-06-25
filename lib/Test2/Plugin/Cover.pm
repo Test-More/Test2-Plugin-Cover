@@ -6,7 +6,7 @@ use Test2::API qw/test2_add_callback_exit context/;
 use Path::Tiny qw/path/;
 use Carp qw/croak/;
 
-our $VERSION = '0.000002';
+our $VERSION = '0.000003';
 
 our %FILES;
 
