@@ -1,5 +1,11 @@
 {{$NEXT}}
 
+    - Clean up and optimize XS
+    - Fix XS thread safety issues
+    - Update benchmarks
+    - Add no_event import option
+    - Make sure event is fired from both processes in event of a fork
+
 0.000002  2020-06-24 22:52:36-07:00 America/Los_Angeles
 
     - Fix typos

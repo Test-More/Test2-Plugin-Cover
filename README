@@ -58,19 +58,24 @@ LIMITATIONS
         # Prove on its own
         Files=478, Tests=17326, 64 wallclock secs ( 1.62 usr  0.46 sys + 57.27 cusr  4.92 csys = 64.27 CPU)
     
-        # Prove with Test2::Plugin::Cover
-        Files=478, Tests=17326, 71 wallclock secs ( 1.73 usr  0.40 sys + 64.22 cusr  6.02 csys = 72.37 CPU)
+        # Prove with Test2::Plugin::Cover (no coverage event)
+        Files=478, Tests=17326, 67 wallclock secs ( 1.61 usr  0.46 sys + 60.98 cusr  5.31 csys = 68.36 CPU)
     
         # Prove with Devel::Cover
         Files=478, Tests=17324, 963 wallclock secs ( 2.39 usr  0.58 sys + 929.12 cusr 31.98 csys = 964.07 CPU)
+
+    no coverage event - No report was generated. This was done to only
+    measure the effect of the XS that adds the data collection overhead,
+    and not the cost of the perl code that generates the report event at
+    the end of every test.
 
     The Moose test suite was also run using Test2::Harness aka yath
 
         # Without Test2::Plugin::Cover
         Wall Time: 62.51 seconds CPU Time: 69.13 seconds (usr: 1.84s | sys: 0.08s | cusr: 60.77s | csys: 6.44s)
     
-        # With Test2::Plugin::Cover
-        Wall Time: 79.32 seconds CPU Time: 86.19 seconds (usr: 2.07s | sys: 0.04s | cusr: 76.02s | csys: 8.06s)
+        # With Test2::Plugin::Cover (no coverage event)
+        Wall Time: 75.46 seconds CPU Time: 82.00 seconds (usr: 1.96s | sys: 0.05s | cusr: 72.64s | csys: 7.35s)
 
     As you can see, there is a performance hit, but it is fairly small,
     specially compared to Devel::Cover. This is not to say anything bad
@@ -96,6 +101,19 @@ SYNOPSIS
 
     This also works for Test2::Harness aka yath, but yath may have a flag
     to enable this for you by the time you are reading these docs.
+
+ SUPPRESS REPORT
+
+    You can suppess the final report (only collect data, do not send the
+    Test2 event)
+
+    CLI:
+
+        HARNESS_PERL_SWITCHES=-MTest2::Plugin::Cover=no_event,1 prove ...
+
+    INLINE:
+
+        use Test2::Plugin::Cover no_event => 1;
 
 CLASS METHODS
 

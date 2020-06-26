@@ -5,20 +5,29 @@
 
 Perl_ppaddr_t orig_subhandler;
 
-SV *one;
+// If we do not use threads we will make this global
+// The performance impact of fetching it each time is significant, so avoid it
+// if we can.
+#ifndef USE_ITHREADS
 HV *files;
+#endif
 
 static OP* my_subhandler(pTHX) {
     OP* out = orig_subhandler(aTHX);
 
     if (out != NULL && (out->op_type == OP_NEXTSTATE || out->op_type == OP_DBSTATE)) {
+
+        // If we are using threads we need to grab this each time
+#ifdef USE_ITHREADS
+        HV *files = get_hv("Test2::Plugin::Cover::FILES", GV_ADDMULTI);
+#endif
+
         char *file = CopFILE(cCOPx(out));
         long len = strlen(file);
 
-        if (!hv_exists(files, file, len)) {
-            SvREFCNT_inc(one);
-            hv_store(files, file, len, one, 0);
-        }
+        // There was 0 performance difference between always setting it, and
+        // setting it only if it did not exist yet.
+        hv_store(files, file, len, &PL_sv_yes, 0);
     }
 
     return out;
@@ -30,13 +39,11 @@ PROTOTYPES: ENABLE
 
 BOOT:
     {
-        MY_CXT_INIT;
-
-        files = get_hv("Test2::Plugin::Cover::FILES", 0);
+        //Initialize the global files HV, but only if we are not a threaded perl
+#ifndef USE_ITHREADS
+        files = get_hv("Test2::Plugin::Cover::FILES", GV_ADDMULTI);
         SvREFCNT_inc(files);
-
-        one = newSVnv(1);
-        SvREFCNT_inc(one);
+#endif
 
         orig_subhandler = PL_ppaddr[OP_ENTERSUB];
         PL_ppaddr[OP_ENTERSUB] = my_subhandler;
