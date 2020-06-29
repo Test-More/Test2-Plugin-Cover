@@ -9,7 +9,7 @@ use File::Spec();
 
 my $SEP = File::Spec->catfile('', '');
 
-our $VERSION = '0.000004';
+our $VERSION = '0.000005';
 
 our %FILES;
 
