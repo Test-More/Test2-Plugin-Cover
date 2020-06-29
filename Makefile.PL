@@ -18,11 +18,13 @@ my %WriteMakefileArgs = (
   "NAME" => "Test2::Plugin::Cover",
   "PREREQ_PM" => {
     "Carp" => 0,
+    "File::Spec" => 0,
     "Path::Tiny" => "0.048",
     "Test2::API" => "1.302166",
     "Test2::EventFacet" => "1.302166"
   },
   "TEST_REQUIRES" => {
+    "Fcntl" => 0,
     "Test2::V0" => "0.000130"
   },
   "VERSION" => "0.000004",
@@ -34,6 +36,8 @@ my %WriteMakefileArgs = (
 
 my %FallbackPrereqs = (
   "Carp" => 0,
+  "Fcntl" => 0,
+  "File::Spec" => 0,
   "Path::Tiny" => "0.048",
   "Test2::API" => "1.302166",
   "Test2::EventFacet" => "1.302166",

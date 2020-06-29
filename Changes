@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+    - Add XS to grab filenames from open/sysopen
+    - Better filename extraction, less missed files.
+
 0.000003  2020-06-25 21:57:37-07:00 America/Los_Angeles
 
     - Clean up and optimize XS

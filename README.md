@@ -8,9 +8,10 @@ This plugin will collect minimal file coverage info, and will do so with
 minimal performance impact.
 
 Every time a subroutine is called this tool will do its best to find the
-filename the subroutine was defined in, and add it to a list. This list will be
-attached to a test2 event just before the test exits. In most formaters the
-event will only show up as a comment on STDOUT
+filename the subroutine was defined in, and add it to a list. Also, anytime you
+attempt to open a file with `open()` or `sysopen()` the file will be added to
+the list. This list will be attached to a test2 event just before the test
+exits. In most formaters the event will only show up as a comment on STDOUT
 ` # This test covered N source files. `. However tools such as
 [Test2::Harness::UI](https://metacpan.org/pod/Test2%3A%3AHarness%3A%3AUI) can make full use of the coverage information contained
 in the event.
@@ -20,9 +21,10 @@ in the event.
 This tool is not intended to record comprehensive coverage information, if you
 want that use [Devel::Cover](https://metacpan.org/pod/Devel%3A%3ACover).
 
-This tool is intended to obtain and maintain lists of files that define subs
-which were executed by any given test. This information is useful if you want
-to determine what test files to run after any given code change.
+This tool is intended to obtain and maintain lists of files that were opened,
+or which define subs which were executed by any given test. This information is
+useful if you want to determine what test files to run after any given code
+change.
 
 The collected coverage data is contained in test2 events, if you use
 [Test2::Harness](https://metacpan.org/pod/Test2%3A%3AHarness) aka `yath` then this data can be logged and consumed by
@@ -31,18 +33,18 @@ other tools such as [Test2::Harness::UI](https://metacpan.org/pod/Test2%3A%3AHar
 # PERFORMANCE
 
 Unlike tools that need to record comprehensive coverage ([Devel::Cover](https://metacpan.org/pod/Devel%3A%3ACover)), This
-module is only concerned about what files defined subs executed directly or
-indirectly by a given test file. As a result this module can get away with a
-tiny bit of XS code that only fires when a subroutine is called. Most coverage
-tools fire off XS for every statement.
+module is only concerned about what files you open, or defined subs executed
+directly or indirectly by a given test file. As a result this module can get
+away with a tiny bit of XS code that only fires when a subroutine is called.
+Most coverage tools fire off XS for every statement.
 
 # LIMITATIONS
 
 This tool uses XS to inject a little bit of C code that runs every time a
-subroutine is called. This C code obtains the next op that will be run and
-tries to pull the filename from it. `eval`, XS, Moose, and other magic can
-sometimes mask the filename, this module only makes a minimal attempt to find
-the filename in these cases.
+subroutine is called, or every time `open()` or `sysopen()` is called. This C
+code obtains the next op that will be run and tries to pull the filename from
+it. `eval`, XS, Moose, and other magic can sometimes mask the filename, this
+module only makes a minimal attempt to find the filename in these cases.
 
 This tool DOES NOT cover anything beyond files in which subs executed by the
 test were defined. If you want sub names, lines executed, and more, use

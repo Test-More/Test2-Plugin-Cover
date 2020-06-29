@@ -5,6 +5,9 @@ use warnings;
 use Test2::API qw/test2_add_callback_exit context/;
 use Path::Tiny qw/path/;
 use Carp qw/croak/;
+use File::Spec();
+
+my $SEP = File::Spec->catfile('', '');
 
 our $VERSION = '0.000004';
 
@@ -64,9 +67,12 @@ sub extract {
     # Moose like to write "blah blah (defined at filename line 123)"
     return $1 if $file =~ m/defined at (.+) line \d+/;
 
-    # This will not handle spaces, but short of finding and hard-coding every
-    # way a tool might do this, our options are limited.
-    return $1 if $file =~ m/(\S+\.(?:pm|t|t2|pmc|c|cpp|xs|o))/i;
+    # If we opened a file with 2-arg open
+    $file =~ s/^[\+\-]?(?:>|>>|<|\|)[\+\-]?//;
+
+    # If we have a foo.bar pattern, or a string that contains this platforms
+    # file separator we will condifer it a valid file.
+    return $file if $file =~ m/\S+\.\S+$/i || $file =~ m/\Q$SEP\E/;
 
     return;
 }
@@ -125,9 +131,10 @@ This plugin will collect minimal file coverage info, and will do so with
 minimal performance impact.
 
 Every time a subroutine is called this tool will do its best to find the
-filename the subroutine was defined in, and add it to a list. This list will be
-attached to a test2 event just before the test exits. In most formaters the
-event will only show up as a comment on STDOUT
+filename the subroutine was defined in, and add it to a list. Also, anytime you
+attempt to open a file with C<open()> or C<sysopen()> the file will be added to
+the list. This list will be attached to a test2 event just before the test
+exits. In most formaters the event will only show up as a comment on STDOUT
 C< # This test covered N source files. >. However tools such as
 L<Test2::Harness::UI> can make full use of the coverage information contained
 in the event.
@@ -137,9 +144,10 @@ in the event.
 This tool is not intended to record comprehensive coverage information, if you
 want that use L<Devel::Cover>.
 
-This tool is intended to obtain and maintain lists of files that define subs
-which were executed by any given test. This information is useful if you want
-to determine what test files to run after any given code change.
+This tool is intended to obtain and maintain lists of files that were opened,
+or which define subs which were executed by any given test. This information is
+useful if you want to determine what test files to run after any given code
+change.
 
 The collected coverage data is contained in test2 events, if you use
 L<Test2::Harness> aka C<yath> then this data can be logged and consumed by
@@ -148,18 +156,18 @@ other tools such as L<Test2::Harness::UI>.
 =head1 PERFORMANCE
 
 Unlike tools that need to record comprehensive coverage (L<Devel::Cover>), This
-module is only concerned about what files defined subs executed directly or
-indirectly by a given test file. As a result this module can get away with a
-tiny bit of XS code that only fires when a subroutine is called. Most coverage
-tools fire off XS for every statement.
+module is only concerned about what files you open, or defined subs executed
+directly or indirectly by a given test file. As a result this module can get
+away with a tiny bit of XS code that only fires when a subroutine is called.
+Most coverage tools fire off XS for every statement.
 
 =head1 LIMITATIONS
 
 This tool uses XS to inject a little bit of C code that runs every time a
-subroutine is called. This C code obtains the next op that will be run and
-tries to pull the filename from it. C<eval>, XS, Moose, and other magic can
-sometimes mask the filename, this module only makes a minimal attempt to find
-the filename in these cases.
+subroutine is called, or every time C<open()> or C<sysopen()> is called. This C
+code obtains the next op that will be run and tries to pull the filename from
+it. C<eval>, XS, Moose, and other magic can sometimes mask the filename, this
+module only makes a minimal attempt to find the filename in these cases.
 
 This tool DOES NOT cover anything beyond files in which subs executed by the
 test were defined. If you want sub names, lines executed, and more, use
