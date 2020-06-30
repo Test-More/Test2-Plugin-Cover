@@ -34,30 +34,24 @@ static OP* my_subhandler(pTHX) {
     return out;
 }
 
-static OP* my_openhandler(pTHX) {
-    dSP;
-
-    SV *file = TOPs;
-    if (SvPOKp(file)) {
+void _sv_file_handler(SV *file) {
+    if (file != NULL && SvPOKp(file)) {
         fetch_files;
         hv_store_ent(files, file, &PL_sv_yes, 0);
     }
+}
 
+static OP* my_openhandler(pTHX) {
+    dSP;
+    _sv_file_handler(TOPs);
     return orig_openhandler(aTHX);
 }
 
 static OP* my_sysopenhandler(pTHX) {
-    dAXMARK;
-
-    SV *file = ST(1);
-    if (SvPOKp(file)) {
-        fetch_files;
-        hv_store_ent(files, file, &PL_sv_yes, 0);
-    }
-
+    dXSARGS;
+    _sv_file_handler(ST(1));
     return orig_sysopenhandler(aTHX);
 }
-
 
 MODULE = Test2::Plugin::Cover PACKAGE = Test2::Plugin::Cover
 
