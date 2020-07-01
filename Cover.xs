@@ -43,13 +43,27 @@ void _sv_file_handler(SV *file) {
 
 static OP* my_openhandler(pTHX) {
     dSP;
-    _sv_file_handler(TOPs);
+    SV **mark = PL_stack_base + TOPMARK;
+    I32 items = (I32)(sp - mark);
+
+    // Only grab for 2-arg or 3-arg form
+    if (items == 2 || items == 3) {
+        _sv_file_handler(TOPs);
+    }
+
     return orig_openhandler(aTHX);
 }
 
 static OP* my_sysopenhandler(pTHX) {
-    dXSARGS;
-    _sv_file_handler(ST(1));
+    dSP;
+    SV **mark = PL_stack_base + TOPMARK;
+    I32 ax    = (I32)(mark - PL_stack_base + 1);
+    I32 items = (I32)(sp - mark);
+
+    if (items >= 2) {
+        _sv_file_handler(PL_stack_base[ax + (1)]);
+    }
+
     return orig_sysopenhandler(aTHX);
 }
 
