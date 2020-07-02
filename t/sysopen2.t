@@ -1,9 +1,11 @@
-use Test2::Plugin::Cover;
-use Test2::V0 -target => 'Test2::Plugin::Cover';
+use Test2::V0;
 use Path::Tiny qw/path/;
 use Fcntl qw/O_RDONLY/;
 
-$CLASS->clear;
+# This test is identical to the other sysopen test, except it does not use
+# Test2::Plugin::Cover. The idea is to weed out sysopen errors not related to
+# the plugin.
+
 my $fh;
 
 print STDERR "\nDEBUG A\n";
@@ -29,18 +31,6 @@ close($fh);
 print STDERR "\nDEBUG E\n";
 STDERR->flush();
 
-like(
-    $CLASS->files(root => path('.')),
-    bag {
-        item('fff.json');
-        item('ggg.json');
-        item('hhh.json');
-        item('iii.json');
-    },
-    "Got files we (tried to) open"
-);
-
-# Final cleanup
-$CLASS->clear;
+ok(1, "Lived");
 
 done_testing;
