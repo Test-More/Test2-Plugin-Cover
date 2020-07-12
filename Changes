@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+    - Disable sysopen
+    - Better filename extraction logic
+    - test for filename extraction
+
 0.000007  2020-07-01 20:08:35-07:00 America/Los_Angeles
 
     - Fix open.t on windows
