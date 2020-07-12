@@ -58,21 +58,32 @@ sub extract {
     my $class = shift;
     my ($file) = @_;
 
-    # No hope :-(
-    return if $file =~ m/^\(eval( \d+\)?)$/;
-
-    # Easy
-    return $file if -e $file;
-
-    # Moose like to write "blah blah (defined at filename line 123)"
-    return $1 if $file =~ m/(?:defined|declared) (?:at|in) (.+) at line \d+/;
-    return $1 if $file =~ m/(?:defined|declared) (?:at|in) (.+) line \d+/;
-    return $1 if $file =~ m/\(eval \d+\)\[(.+):\d+\]/;
-    return $1 if $file =~ m/\((.+)\) line \d+/;
-    return $1 if $file =~ m/\((.+)\) at line \d+/;
-
     # If we opened a file with 2-arg open
-    $file =~ s/^[\+\-]?(?:>|>>|<|\|)[\+\-]?//;
+    $file =~ s/^[\+\-]?(?:>{1,2}|<|\|)[\+\-]?//;
+
+    # Sometimes things get nested and we need to extract and then extract again...
+    while (1) {
+        # No hope :-(
+        return if $file =~ m/^\(eval( \d+\)?)$/;
+
+        # Easy
+        return $file if -e $file;
+
+        my $start = $file;
+
+        # Moose like to write "blah blah (defined at filename line 123)"
+        $file = $1 if $file =~ m/(?:defined|declared) (?:at|in) (.+) at line \d+/;
+        $file = $1 if $file =~ m/(?:defined|declared) (?:at|in) (.+) line \d+/;
+        $file = $1 if $file =~ m/\(eval \d+\)\[(.+):\d+\]/;
+        $file = $1 if $file =~ m/\((.+)\) line \d+/;
+        $file = $1 if $file =~ m/\((.+)\) at line \d+/;
+
+        # Extracted everything away
+        return unless $file;
+
+        # Not going to change anymore
+        last if $file eq $start;
+    }
 
     # These characters are rare in file names, but common in calls where files
     # could not be determined, so we probably failed to extract. If this

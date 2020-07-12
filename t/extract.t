@@ -9,6 +9,7 @@ is( $CLASS->extract('(eval)'), undef, "No file to extract from (eval)");
 is( $CLASS->extract(__FILE__), __FILE__, "Can find the current file");
 
 is($CLASS->extract($_), 'foo/bar.pm', "extracted from '$_'") for (
+    # Stuff Moose sometimes spits out
     'defined at foo/bar.pm line 123',
     'declared at foo/bar.pm line 123',
     'defined in foo/bar.pm line 123',
@@ -18,11 +19,23 @@ is($CLASS->extract($_), 'foo/bar.pm', "extracted from '$_'") for (
     'defined in foo/bar.pm at line 123',
     'declared in foo/bar.pm at line 123',
 
+    # More stuff Moose does
     '(eval 123)[foo/bar.pm:123]',
     'fasdf (foo/bar.pm) at line 123',
     'fasdf (foo/bar.pm) line 123',
+
+    # 2 arg open
+    '>>foo/bar.pm',
+    '>foo/bar.pm',
+    '|foo/bar.pm',
+    '<foo/bar.pm',
+    '>+foo/bar.pm',
+    '>-foo/bar.pm',
+    '<+foo/bar.pm',
+    '<-foo/bar.pm',
 );
 
+is($CLASS->extract('declared in (eval 123) line 123'), undef, "Nothing to extract");
 is($CLASS->extract('foo ()'), undef, "Nothing to extract");
 is($CLASS->extract('[foo]'), undef, "Nothing to extract");
 is($CLASS->extract('foo.pm foo->bar'), undef, "Nothing to extract");
