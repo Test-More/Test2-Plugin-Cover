@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+    - Remove garbage blib/ dir from dist
+
 0.000010  2021-04-07 20:56:32-07:00 America/Los_Angeles
 
     - Add submap collection data
