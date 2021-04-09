@@ -50,28 +50,15 @@ C<open()>.
             # The wildcard is used when a proper sub name cannot be determined
             '*' => { ... },
 
-            'SomeModule::subroutine' => {
-                sub_package => 'SomeModule',
-                sub_name    => 'subroutine',
-
-                call_count => $INTEGER,
-
-                # The items in this list can be anything, strings, numbers,
-                # data structures, etc.
-                # A naive attempt is made to avoid duplicates in this list,
-                # so the same string or reference will not appear twice, but 2
-                # different references with identical contents may appear.
-                called_by => [
-                    '*',     # The wildcard is used when no 'called by' can be determined
-                    $FROM_A,
-                    $FROM_B,
-                    ...
-                ],
-            },
+            'subroutine' => [
+                '*',     # The wildcard is used when no 'called by' can be determined
+                $FROM_A,
+                $FROM_B,
+                ...
+            ],
         },
         ...
     }
-
 
 =item $hashref = $about->{openmap}
 
