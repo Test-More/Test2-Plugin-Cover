@@ -9,7 +9,7 @@ use File::Spec();
 
 my $SEP = File::Spec->catfile('', '');
 
-our $VERSION = '0.000018';
+our $VERSION = '0.000019';
 
 # Directly modifying this is a bad idea, but for the XS to work it needs to be
 # a package var, not a lexical.
