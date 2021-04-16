@@ -191,17 +191,27 @@ Please see the `set_from()` documentation for details on values.
 
         sub test_parameters {
             my $class = shift;
-            my ($test_file, @from_values) = @_;
+            my ($test_file, \@from_values) = @_;
 
             ...
 
-            # Any or all of these may be undef or omitted, can also return 'undef'
-            # instead of a hashref if no parameters are needed.
             return {
+                # If true - run the test
+                # If false - skip the test
+                # If not present or undef - run the test
+                run => $bool,
+
+                # The following are optional
                 argv  => [ ... ],
                 env   => { ... },
                 stdin => "...",
             };
+
+            # OR
+            # If true - run the test
+            # If false - skip the test
+            # If undef or empty list - run the test
+            return $bool;
         }
 
     This will be used by [Test2::Harness](https://metacpan.org/pod/Test2%3A%3AHarness) to determine what data needs to be

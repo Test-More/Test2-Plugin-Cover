@@ -195,17 +195,27 @@ CLASS METHODS
 
           sub test_parameters {
               my $class = shift;
-              my ($test_file, @from_values) = @_;
+              my ($test_file, \@from_values) = @_;
       
               ...
       
-              # Any or all of these may be undef or omitted, can also return 'undef'
-              # instead of a hashref if no parameters are needed.
               return {
+                  # If true - run the test
+                  # If false - skip the test
+                  # If not present or undef - run the test
+                  run => $bool,
+      
+                  # The following are optional
                   argv  => [ ... ],
                   env   => { ... },
                   stdin => "...",
               };
+      
+              # OR
+              # If true - run the test
+              # If false - skip the test
+              # If undef or empty list - run the test
+              return $bool;
           }
 
       This will be used by Test2::Harness to determine what data needs to
