@@ -17,6 +17,7 @@ our $FROM = '*';
 my $FROM_MODIFIED = 0;
 my $FROM_MANAGER;
 
+my $ROOT;
 
 my %REPORT;
 our @TOUCHED;
@@ -40,8 +41,9 @@ sub import {
     }
 
     my $ran = 0;
-    my $root = path('.')->realpath;
-    my $callback = sub { return if $ran++; $class->report(%params, ctx => $_[0], root => $root) };
+    $ROOT = $params{root} if $params{root};
+    $ROOT //= path('.')->realpath;
+    my $callback = sub { return if $ran++; $class->report(%params, ctx => $_[0], root => $ROOT) };
 
     test2_add_callback_exit($callback);
 
@@ -65,6 +67,8 @@ sub reset_coverage {
     @OPENED  = ();
     %REPORT  = ();
 }
+
+sub set_root { $ROOT = pop };
 
 sub get_from   { $FROM }
 sub set_from   { $FROM_MODIFIED++; $FROM = pop }
