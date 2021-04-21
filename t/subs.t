@@ -15,6 +15,9 @@ subtest simple_coverage => sub {
     Fake1->fake;
     Fake2->fake;
 
+    use Data::Dumper;
+    print Dumper(\@Test2::Plugin::Cover::TOUCHED);
+
     $CLASS->set_from('simple_coverage');
     Fake1->fake;
     Fake1->fake;

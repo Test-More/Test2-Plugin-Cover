@@ -17,7 +17,8 @@ our $FROM = '*';
 my $FROM_MODIFIED = 0;
 my $FROM_MANAGER;
 
-my $ROOT;
+our $ROOT;
+BEGIN { $ROOT = "" . path('.')->realpath }
 
 my %REPORT;
 our @TOUCHED;
@@ -41,8 +42,8 @@ sub import {
     }
 
     my $ran = 0;
-    $ROOT = $params{root} if $params{root};
-    $ROOT //= path('.')->realpath;
+    $ROOT = "" . $params{root} if $params{root};
+    $ROOT //= "" . path('.')->realpath;
     my $callback = sub { return if $ran++; $class->report(%params, ctx => $_[0], root => $ROOT) };
 
     test2_add_callback_exit($callback);
@@ -68,7 +69,7 @@ sub reset_coverage {
     %REPORT  = ();
 }
 
-sub set_root { $ROOT = pop };
+sub set_root { $ROOT = "" . pop };
 
 sub get_from   { $FROM }
 sub set_from   { $FROM_MODIFIED++; $FROM = pop }
@@ -81,6 +82,7 @@ sub filter {
     my ($file, %params) = @_;
 
     my $root = $params{root} // path('.')->realpath;
+    $root = path($root);
 
     my $path = $INC{$file} ? path($INC{$file}) : path($file);
     $path = $path->realpath if $path->exists;
@@ -229,7 +231,7 @@ sub _sort {
     $class->_process(%params) if @TOUCHED || @OPENED;
     return if $REPORT{sorted};
 
-    @{$REPORT{files}} = sort @{$REPORT{files}};
+    @{$REPORT{files}} = sort @{$REPORT{files} //= []};
 
     return;
 }
@@ -241,7 +243,7 @@ sub files {
     $class->_process(%params) if @TOUCHED || @OPENED;
     $class->_sort(%params) unless $REPORT{sorted};
 
-    return $REPORT{files};
+    return $REPORT{files} //= [];
 }
 
 sub submap {
@@ -250,7 +252,7 @@ sub submap {
 
     $class->_process(%params) if @TOUCHED || @OPENED;
 
-    return $REPORT{submap};
+    return $REPORT{submap} //= {};
 }
 
 sub openmap {
@@ -259,7 +261,7 @@ sub openmap {
 
     $class->_process(%params) if @TOUCHED || @OPENED;
 
-    return $REPORT{openmap};
+    return $REPORT{openmap} //= {};
 }
 
 sub report {
@@ -269,9 +271,9 @@ sub report {
     $class->_process(%params) if @TOUCHED || @OPENED;
     $class->_sort(%params) unless $REPORT{sorted};
 
-    my $files   = $REPORT{files};
-    my $submap  = $REPORT{submap};
-    my $openmap = $REPORT{openmap};
+    my $files   = $REPORT{files}   //= [];
+    my $submap  = $REPORT{submap}  //= {};
+    my $openmap = $REPORT{openmap} //= {};
     my $type    = $FROM_MODIFIED ? 'split' : 'flat';
 
     my $details = "This test covered " . @$files . " source files.";

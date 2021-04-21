@@ -13,7 +13,7 @@ Perl_ppaddr_t orig_sysopenhandler;
 // if we can.
 #ifdef USE_ITHREADS
 #define fetch_touched AV *touched = get_av("Test2::Plugin::Cover::TOUCHED", GV_ADDMULTI);
-#define fetch_opened  HV *opened  = get_av("Test2::Plugin::Cover::OPENED",  GV_ADDMULTI);
+#define fetch_opened  AV *opened  = get_av("Test2::Plugin::Cover::OPENED",  GV_ADDMULTI);
 #else
 AV *touched;
 AV *opened;
@@ -22,12 +22,36 @@ AV *opened;
 #endif
 
 #define fetch_from SV *from = get_sv("Test2::Plugin::Cover::FROM", 0);
+#define fetch_root SV *root = get_sv("Test2::Plugin::Cover::ROOT", 0);
 
 static OP* my_subhandler(pTHX) {
     dSP;
     OP* out = orig_subhandler(aTHX);
 
     if (out != NULL && (out->op_type == OP_NEXTSTATE || out->op_type == OP_DBSTATE)) {
+        char *fname = CopFILE(cCOPx(out));
+
+        // Check for absolute paths and reject them. This is a very
+        // unix-oriented optimization.
+        if (!strncmp(fname, "/", 1)) {
+            fetch_root;
+
+            if (root != NULL && SvPOK(root)) {
+                STRLEN len;
+                char *rt = NULL;
+                rt = SvPV(root, len);
+
+                int l2 = strlen(fname);
+                if (l2 < len) len = l2;
+
+                if (strncmp(fname, rt, len)) {
+                    return out;
+                }
+            }
+        }
+
+        SV *file = newSVpv(fname, 0);
+
         SV *subname = NULL;
 
         GV *my_gv = sub_to_gv(aTHX_ *SP);
@@ -36,8 +60,6 @@ static OP* my_subhandler(pTHX) {
         }
 
         HV *item = newHV();
-
-        SV *file = newSVpv(CopFILE(cCOPx(out)), 0);
         hv_store(item, "file", 4, file, 0);
 
         fetch_from;
