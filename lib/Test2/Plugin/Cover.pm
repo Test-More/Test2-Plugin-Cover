@@ -2,7 +2,7 @@ package Test2::Plugin::Cover;
 use strict;
 use warnings;
 
-use Test2::API qw/test2_add_callback_exit context/;
+use Test2::API qw/test2_add_callback_exit test2_add_callback_context_init context/;
 use Path::Tiny qw/path/;
 use Carp qw/croak/;
 use File::Spec();
@@ -47,6 +47,7 @@ sub import {
     my $callback = sub { return if $ran++; $class->report(%params, ctx => $_[0], root => $ROOT) };
 
     test2_add_callback_exit($callback);
+    test2_add_callback_context_init(sub { $class->_process(%params) });
 
     # Fallback if we fork.
     eval 'END { local $?; $callback->() }; 1' or die $@;
