@@ -14,11 +14,14 @@ Perl_ppaddr_t orig_sysopenhandler;
 #ifdef USE_ITHREADS
 #define fetch_touched AV *touched = get_av("Test2::Plugin::Cover::TOUCHED", GV_ADDMULTI);
 #define fetch_opened  AV *opened  = get_av("Test2::Plugin::Cover::OPENED",  GV_ADDMULTI);
+#define fetch_seen    HV *seen    = get_hv("Test2::Plugin::Cover::SEEN",    GV_ADDMULTI);
 #else
 AV *touched;
 AV *opened;
+HV *seen;
 #define fetch_touched NOOP
 #define fetch_opened NOOP
+#define fetch_seen NOOP
 #endif
 
 #define fetch_from SV *from = get_sv("Test2::Plugin::Cover::FROM", 0);
@@ -30,6 +33,7 @@ static OP* my_subhandler(pTHX) {
 
     if (out != NULL && (out->op_type == OP_NEXTSTATE || out->op_type == OP_DBSTATE)) {
         char *fname = CopFILE(cCOPx(out));
+        size_t namelen = strlen(fname);
 
         // Check for absolute paths and reject them. This is a very
         // unix-oriented optimization.
@@ -41,8 +45,7 @@ static OP* my_subhandler(pTHX) {
                 char *rt = NULL;
                 rt = SvPV(root, len);
 
-                int l2 = strlen(fname);
-                if (l2 < len) return out;
+                if (namelen < len) return out;
 
                 if (strncmp(fname, rt, len)) {
                     return out;
@@ -50,26 +53,44 @@ static OP* my_subhandler(pTHX) {
             }
         }
 
-        SV *file = newSVpv(fname, 0);
+        SV *key = newSVpv(fname, namelen);
 
-        SV *subname = NULL;
-
+        char *subname_str = NULL;
         GV *my_gv = sub_to_gv(aTHX_ *SP);
         if (my_gv != NULL) {
-            subname = newSVpv(GvNAME(my_gv), 0);
+            subname_str = GvNAME(my_gv);
+            sv_catpvf(key, ":%s", subname_str);
         }
-
-        HV *item = newHV();
-        hv_store(item, "file", 4, file, 0);
 
         fetch_from;
         if (from && SvOK(from)) {
+            sv_catpv(key, ":");
+            sv_catsv(key, from);
+        }
+        else {
+            from = NULL;
+        }
+
+        fetch_seen;
+        if (hv_exists_ent(seen, key, 0)) {
+            return out;
+        }
+        else {
+            hv_store_ent(seen, key, &PL_sv_yes, 0);
+        }
+
+        HV *item = newHV();
+        SV *file = newSVpv(fname, 0);
+        hv_store(item, "file", 4, file, 0);
+
+        if (from != NULL) {
             SV *from_val = sv_mortalcopy(from);
             SvREFCNT_inc(from_val);
             hv_store(item, "called_by", 9, from_val, 0);
         }
 
-        if (subname) {
+        if (subname_str != NULL) {
+            SV *subname = newSVpv(subname_str, 0);
             hv_store(item, "sub_name", 8, subname, 0);
         }
 
@@ -211,8 +232,10 @@ BOOT:
 #ifndef USE_ITHREADS
         touched = get_av("Test2::Plugin::Cover::TOUCHED", GV_ADDMULTI);
         opened  = get_av("Test2::Plugin::Cover::OPENED",  GV_ADDMULTI);
+        seen    = get_hv("Test2::Plugin::Cover::SEEN",    GV_ADDMULTI);
         SvREFCNT_inc(touched);
         SvREFCNT_inc(opened);
+        SvREFCNT_inc(seen);
 #endif
 
         orig_subhandler = PL_ppaddr[OP_ENTERSUB];
