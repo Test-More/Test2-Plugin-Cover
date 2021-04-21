@@ -42,7 +42,7 @@ static OP* my_subhandler(pTHX) {
                 rt = SvPV(root, len);
 
                 int l2 = strlen(fname);
-                if (l2 < len) len = l2;
+                if (l2 < len) return out;
 
                 if (strncmp(fname, rt, len)) {
                     return out;
