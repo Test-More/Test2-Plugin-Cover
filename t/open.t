@@ -31,15 +31,15 @@ like(
     "Got files we (tried to) open",
 );
 
-$data = $CLASS->openmap(root => path('.'));
+$data = $CLASS->data(root => path('.'));
 like(
     $data,
     hash {
-        field 'aaa.json' => ['*'];
-        field 'bbb.json' => ['*'];
-        field 'ccc.json' => ['xxx'];
-        field 'ddd.json' => ['xxx'];
-        field $eee => ['xxx', 'yyy'];
+        field 'aaa.json' => {opens => ['*']};
+        field 'bbb.json' => {opens => ['*']};
+        field 'ccc.json' => {opens => ['xxx']};
+        field 'ddd.json' => {opens => ['xxx']};
+        field $eee       => {opens => ['xxx', 'yyy']};
     },
     "Got list of what callers tried to open the files"
 );

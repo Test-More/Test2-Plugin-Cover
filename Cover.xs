@@ -12,16 +12,10 @@ Perl_ppaddr_t orig_sysopenhandler;
 // The performance impact of fetching it each time is significant, so avoid it
 // if we can.
 #ifdef USE_ITHREADS
-#define fetch_touched AV *touched = get_av("Test2::Plugin::Cover::TOUCHED", GV_ADDMULTI);
-#define fetch_opened  AV *opened  = get_av("Test2::Plugin::Cover::OPENED",  GV_ADDMULTI);
-#define fetch_seen    HV *seen    = get_hv("Test2::Plugin::Cover::SEEN",    GV_ADDMULTI);
+#define fetch_report HV *report = get_hv("Test2::Plugin::Cover::REPORT", GV_ADDMULTI);
 #else
-AV *touched;
-AV *opened;
-HV *seen;
-#define fetch_touched NOOP
-#define fetch_opened NOOP
-#define fetch_seen NOOP
+HV *report;
+#define fetch_report NOOP
 #endif
 
 #define fetch_from SV *from = get_sv("Test2::Plugin::Cover::FROM", 0);
@@ -33,7 +27,7 @@ static OP* my_subhandler(pTHX) {
 
     if (out != NULL && (out->op_type == OP_NEXTSTATE || out->op_type == OP_DBSTATE)) {
         char *fname = CopFILE(cCOPx(out));
-        size_t namelen = strlen(fname);
+        STRLEN namelen = strlen(fname);
 
         // Check for absolute paths and reject them. This is a very
         // unix-oriented optimization.
@@ -53,49 +47,62 @@ static OP* my_subhandler(pTHX) {
             }
         }
 
-        SV *key = newSVpv(fname, namelen);
+        fetch_report;
+        HV *file = NULL;
+        SV **existing_file = hv_fetch(report, fname, namelen, 0);
+        if (existing_file) {
+            file = (HV *)SvRV(*existing_file);
+        }
+        else {
+            file = newHV();
+            hv_store(report, fname, namelen, newRV_inc((SV *)file), 0);
+        }
 
-        char *subname_str = NULL;
+        HV *subs;
+        SV **existing_subs = hv_fetch(file, "subs", 4, 0);
+        if (existing_subs) {
+            subs = (HV *)SvRV(*existing_subs);
+        }
+        else {
+            subs = newHV();
+            hv_store(file, "subs", 4, newRV_inc((SV *)subs), 0);
+        }
+
+        char *subname = NULL;
+        STRLEN sublen = 0;
+
         GV *my_gv = sub_to_gv(aTHX_ *SP);
         if (my_gv != NULL) {
-            subname_str = GvNAME(my_gv);
-            sv_catpvf(key, ":%s", subname_str);
+            subname = GvNAME(my_gv);
+            sublen = strlen(subname);
+        }
+        else {
+            subname = "*";
+            sublen = 1;
+        }
+
+        HV *sub = NULL;
+        SV **existing_sub = hv_fetch(subs, subname, sublen, 0);
+        if (existing_sub) {
+            sub = (HV *)SvRV(*existing_sub);
+        }
+        else {
+            sub = newHV();
+            hv_store(subs, subname, sublen, newRV_inc((SV *)sub), 0);
         }
 
         fetch_from;
-        if (from && SvOK(from)) {
-            sv_catpv(key, ":");
-            sv_catsv(key, from);
+        if (!(from && SvOK(from))) {
+            from = newSVpv("*", 1);
         }
         else {
-            from = NULL;
+            from = sv_mortalcopy(from);
+            SvREFCNT_inc(from);
         }
 
-        fetch_seen;
-        if (hv_exists_ent(seen, key, 0)) {
-            return out;
+        if (!hv_exists_ent(sub, from, 0)) {
+            hv_store_ent(sub, from, from, 0);
         }
-        else {
-            hv_store_ent(seen, key, &PL_sv_yes, 0);
-        }
-
-        HV *item = newHV();
-        SV *file = newSVpv(fname, 0);
-        hv_store(item, "file", 4, file, 0);
-
-        if (from != NULL) {
-            SV *from_val = sv_mortalcopy(from);
-            SvREFCNT_inc(from_val);
-            hv_store(item, "called_by", 9, from_val, 0);
-        }
-
-        if (subname_str != NULL) {
-            SV *subname = newSVpv(subname_str, 0);
-            hv_store(item, "sub_name", 8, subname, 0);
-        }
-
-        fetch_touched;
-        av_push(touched, newRV((SV *)item));
     }
 
     return out;
@@ -178,21 +185,40 @@ static GV *sub_to_gv(pTHX_ SV *sv) {
     return NULL;
 }
 
-void _sv_file_handler(SV *file) {
-    if (file != NULL && SvPOKp(file)) {
-        fetch_opened;
+void _sv_file_handler(SV *filename) {
+    if (filename == NULL) return;
+    if (!SvPOKp(filename)) return;
 
-        AV *item = newAV();
-        av_push(item, file);
-        SvREFCNT_inc(file);
-        av_push(opened, newRV((SV *)item));
+    fetch_report;
+    HE *file_he = hv_fetch_ent(report, filename, 0, 0);
+    HV *file = NULL;
+    if (file_he) {
+        file = (HV *)SvRV(HeVAL(file_he));
+    }
+    else {
+        file = newHV();
+        hv_store_ent(report, filename, newRV_inc((SV *)file), 0);
+    }
 
-        fetch_from;
-        if (from && SvOK(from)) {
-            SV *from_val = sv_mortalcopy(from);
-            SvREFCNT_inc(from_val);
-            av_push(item, from_val);
-        }
+    HV *opens;
+    SV **existing_opens = hv_fetch(file, "opens", 5, 0);
+    if (existing_opens) {
+        opens = (HV *)SvRV(*existing_opens);
+    }
+    else {
+        opens = newHV();
+        hv_store(file, "opens", 5, newRV_inc((SV *)opens), 0);
+    }
+
+    fetch_from;
+    if (!(from && SvOK(from))) {
+        from = newSVpv("*", 1);
+    }
+
+    if (!hv_exists_ent(opens, from, 0)) {
+        SV *from_val = sv_mortalcopy(from);
+        SvREFCNT_inc(from_val);
+        hv_store_ent(opens, from_val, from_val, 0);
     }
 }
 
@@ -230,12 +256,8 @@ BOOT:
     {
         //Initialize the global files HV, but only if we are not a threaded perl
 #ifndef USE_ITHREADS
-        touched = get_av("Test2::Plugin::Cover::TOUCHED", GV_ADDMULTI);
-        opened  = get_av("Test2::Plugin::Cover::OPENED",  GV_ADDMULTI);
-        seen    = get_hv("Test2::Plugin::Cover::SEEN",    GV_ADDMULTI);
-        SvREFCNT_inc(touched);
-        SvREFCNT_inc(opened);
-        SvREFCNT_inc(seen);
+        report = get_hv("Test2::Plugin::Cover::REPORT", GV_ADDMULTI);
+        SvREFCNT_inc(report);
 #endif
 
         orig_subhandler = PL_ppaddr[OP_ENTERSUB];

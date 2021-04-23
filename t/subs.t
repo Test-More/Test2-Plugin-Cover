@@ -44,16 +44,21 @@ subtest simple_coverage => sub {
     );
 
     is(
-        $CLASS->submap(root => path('t/lib')),
+        $CLASS->data(root => path('t/lib')),
         {
             'Fake1.pm' => {
-                'fake' => ['*', 'simple_coverage', 'simple_coverage_x'],
+                subs => {
+                    'fake' => ['*', 'simple_coverage', 'simple_coverage_x'],
+                },
             },
             'Fake2.pm' => {
-                'fake' => ['*', 'simple_coverage', 'simple_coverage_x'],
+                subs => {
+                    'fake' => ['*', 'simple_coverage', 'simple_coverage_x'],
+                },
             },
         },
-        "Got expected submap"
+        "Got expected subs",
+        $CLASS->data(root => path('t/lib')),
     );
 
     $CLASS->reset_coverage;
@@ -65,9 +70,9 @@ subtest simple_coverage => sub {
     );
 
     is(
-        $CLASS->submap(root => path('t/lib')),
+        $CLASS->data(root => path('t/lib')),
         {},
-        "Cleared submap",
+        "Cleared subs",
     );
 };
 
