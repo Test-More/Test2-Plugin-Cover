@@ -139,9 +139,12 @@ sub extract {
     return;
 }
 
-my %SPECIAL_SUBS = (
+my %HIDDEN_SUBS = (
     '__ANON__'  => 1,
     'eval'      => 1,
+);
+
+my %SPECIAL_SUBS = (
     'BEGIN'     => 1,
     'CHECK'     => 1,
     'END'       => 1,
@@ -168,15 +171,21 @@ sub data {
 
     for my $file (keys %$report) {
         my $rval = $report->{$file} // next;
-        my $oval = {%$rval};
-        $out->{$file} = $oval;
+        my $oval = $out->{$file} = {};
 
-        if (my $opens = delete $oval->{opens}) {
-            $oval->{opens} = [sort keys %$opens];
-        }
+        for my $sub (keys %$rval) {
+            next if $HIDDEN_SUBS{$sub};
 
-        if (my $subs = delete $oval->{subs}) {
-            $oval->{subs} = { map { $_ => [sort values %{$subs->{$_}}] } keys %$subs };
+            my $key = $SPECIAL_SUBS{$sub} ? '*' : $sub;
+            my @add = map { $rval->{$sub}->{$_} } keys %{$rval->{$sub}};
+
+            if ($oval->{$key}) {
+                my %seen;
+                $oval->{$key} = [ sort grep { !$seen{$_}++ } @{$oval->{$key}}, @add ];
+            }
+            else {
+                $oval->{$key} = [ sort @add ];
+            }
         }
     }
 
@@ -232,28 +241,23 @@ sub _process {
         my $path = $class->$filter($file, %params) // next;
         next if $FILTER{$path};
 
-        my $copy = $REPORT{$raw};
+        my $from = $REPORT{$raw};
 
         # Easy
         if (!$report{$path}) {
-            $report{$path} = $copy;
+            $report{$path} = $from;
             next;
         }
 
         # Merge
         my $into = $report{$path};
-        if (my $opened = $copy->{opened}) {
-            $into->{opened} = $into->{opened} ? {%{$into->{opened}}, %$opened} : $opened;
-        }
 
-        if (my $msubs = $copy->{subs}) {
-            if (my $isubs = $into->{subs}) {
-                for my $sub (keys %$msubs) {
-                    $isubs->{$sub} = $isubs->{$sub} ? { %{$isubs->{$sub}}, %{$msubs->{$sub}} } : $msubs->{$sub};
-                }
+        for my $sub (keys %$from) {
+            if ($into->{$sub}) {
+                $into->{$sub} = {%{$into->{$sub}}, %{$from->{$sub}}};
             }
             else {
-                $into->{subs} = $msubs;
+                $into->{$sub} = $from->{$sub};
             }
         }
     }

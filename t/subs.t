@@ -47,14 +47,10 @@ subtest simple_coverage => sub {
         $CLASS->data(root => path('t/lib')),
         {
             'Fake1.pm' => {
-                subs => {
-                    'fake' => ['*', 'simple_coverage', 'simple_coverage_x'],
-                },
+                'fake' => ['*', 'simple_coverage', 'simple_coverage_x'],
             },
             'Fake2.pm' => {
-                subs => {
-                    'fake' => ['*', 'simple_coverage', 'simple_coverage_x'],
-                },
+                'fake' => ['*', 'simple_coverage', 'simple_coverage_x'],
             },
         },
         "Got expected subs",

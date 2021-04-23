@@ -21,6 +21,44 @@ HV *report;
 #define fetch_from SV *from = get_sv("Test2::Plugin::Cover::FROM", 0);
 #define fetch_root SV *root = get_sv("Test2::Plugin::Cover::ROOT", 0);
 
+void add_entry(char *fname, STRLEN fnamelen, char *sname, STRLEN snamelen) {
+    fetch_report;
+    HV *file = NULL;
+    SV **existing_file = hv_fetch(report, fname, fnamelen, 0);
+    if (existing_file) {
+        file = (HV *)SvRV(*existing_file);
+    }
+    else {
+        file = newHV();
+        hv_store(report, fname, fnamelen, newRV_inc((SV *)file), 0);
+    }
+
+    HV *sub = NULL;
+    SV **existing_sub = hv_fetch(file, sname, snamelen, 0);
+    if (existing_sub) {
+        sub = (HV *)SvRV(*existing_sub);
+    }
+    else {
+        sub = newHV();
+        hv_store(file, sname, snamelen, newRV_inc((SV *)sub), 0);
+    }
+
+    fetch_from;
+    if (!(from && SvOK(from))) {
+        from = newSVpv("*", 1);
+    }
+    else {
+        from = sv_mortalcopy(from);
+        SvREFCNT_inc(from);
+    }
+
+    if (!hv_exists_ent(sub, from, 0)) {
+        hv_store_ent(sub, from, from, 0);
+    }
+
+    return;
+}
+
 static OP* my_subhandler(pTHX) {
     dSP;
     OP* out = orig_subhandler(aTHX);
@@ -47,27 +85,6 @@ static OP* my_subhandler(pTHX) {
             }
         }
 
-        fetch_report;
-        HV *file = NULL;
-        SV **existing_file = hv_fetch(report, fname, namelen, 0);
-        if (existing_file) {
-            file = (HV *)SvRV(*existing_file);
-        }
-        else {
-            file = newHV();
-            hv_store(report, fname, namelen, newRV_inc((SV *)file), 0);
-        }
-
-        HV *subs;
-        SV **existing_subs = hv_fetch(file, "subs", 4, 0);
-        if (existing_subs) {
-            subs = (HV *)SvRV(*existing_subs);
-        }
-        else {
-            subs = newHV();
-            hv_store(file, "subs", 4, newRV_inc((SV *)subs), 0);
-        }
-
         char *subname = NULL;
         STRLEN sublen = 0;
 
@@ -81,28 +98,7 @@ static OP* my_subhandler(pTHX) {
             sublen = 1;
         }
 
-        HV *sub = NULL;
-        SV **existing_sub = hv_fetch(subs, subname, sublen, 0);
-        if (existing_sub) {
-            sub = (HV *)SvRV(*existing_sub);
-        }
-        else {
-            sub = newHV();
-            hv_store(subs, subname, sublen, newRV_inc((SV *)sub), 0);
-        }
-
-        fetch_from;
-        if (!(from && SvOK(from))) {
-            from = newSVpv("*", 1);
-        }
-        else {
-            from = sv_mortalcopy(from);
-            SvREFCNT_inc(from);
-        }
-
-        if (!hv_exists_ent(sub, from, 0)) {
-            hv_store_ent(sub, from, from, 0);
-        }
+        add_entry(fname, namelen, subname, sublen);
     }
 
     return out;
@@ -189,37 +185,10 @@ void _sv_file_handler(SV *filename) {
     if (filename == NULL) return;
     if (!SvPOKp(filename)) return;
 
-    fetch_report;
-    HE *file_he = hv_fetch_ent(report, filename, 0, 0);
-    HV *file = NULL;
-    if (file_he) {
-        file = (HV *)SvRV(HeVAL(file_he));
-    }
-    else {
-        file = newHV();
-        hv_store_ent(report, filename, newRV_inc((SV *)file), 0);
-    }
+    STRLEN namelen = 0;
+    char *fname = SvPV(filename, namelen);
 
-    HV *opens;
-    SV **existing_opens = hv_fetch(file, "opens", 5, 0);
-    if (existing_opens) {
-        opens = (HV *)SvRV(*existing_opens);
-    }
-    else {
-        opens = newHV();
-        hv_store(file, "opens", 5, newRV_inc((SV *)opens), 0);
-    }
-
-    fetch_from;
-    if (!(from && SvOK(from))) {
-        from = newSVpv("*", 1);
-    }
-
-    if (!hv_exists_ent(opens, from, 0)) {
-        SV *from_val = sv_mortalcopy(from);
-        SvREFCNT_inc(from_val);
-        hv_store_ent(opens, from_val, from_val, 0);
-    }
+    add_entry(fname, namelen, "<>", 2);
 }
 
 static OP* my_openhandler(pTHX) {
