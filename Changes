@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+    - Fix uninitialized var and warnings in XS (#3)
+
 0.000023  2021-07-02 11:06:26-07:00 America/Los_Angeles
 
     - Remove job-field, it is not accurate with IPC
