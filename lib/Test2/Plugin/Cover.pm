@@ -18,8 +18,9 @@ our $FROM = '*';
 my $FROM_MODIFIED = 0;
 my $FROM_MANAGER;
 
-our ($ENABLED, $ROOT, $LOAD_ROOT, %REPORT);
+our ($ENABLED, $ROOT, $LOAD_ROOT, %REPORT, @OPENS, $TRACE_OPENS);
 BEGIN {
+    $TRACE_OPENS = 0;
     $ENABLED = 0;
     $LOAD_ROOT = "" . path('.')->realpath;
     $ROOT = $LOAD_ROOT;
